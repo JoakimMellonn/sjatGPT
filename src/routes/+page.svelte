@@ -23,7 +23,7 @@
 	let drink: Drink | undefined = $state();
 	let loading: boolean = $state(false);
 
-	onMount(() => {
+	onMount(async () => {
 		const alcoholicsResult = localStorage.getItem('alcoholics');
 		if (alcoholicsResult) {
 			alcoholics = JSON.parse(alcoholicsResult);
@@ -34,6 +34,36 @@
 			others = JSON.parse(othersResult);
 		}
 	});
+
+	async function requestPort() {
+		const port = await navigator.serial.requestPort();
+		console.log(port);
+
+		await port.open({ baudRate: 9600 });
+		console.log(port.readable);
+
+		while (port.readable) {
+			const reader = port.readable.getReader();
+
+			try {
+				while (true) {
+					const { value, done } = await reader.read();
+					if (done) {
+						// Allow the serial port to be closed later.
+						console.log('closed');
+						reader.releaseLock();
+						break;
+					}
+					if (value) {
+						console.log('Requesting drink...');
+						requestDrink();
+					}
+				}
+			} catch (error) {
+				// TODO: Handle non-fatal read error.
+			}
+		}
+	}
 
 	function addAlcohol() {
 		if (alcoholics.includes(alcoholInput)) {
@@ -125,14 +155,19 @@
 	}
 </script>
 
-<div class="grid h-screen w-screen grid-cols-2 grid-rows-6 bg-purple-900">
+<div class="grid min-h-screen w-screen grid-cols-2 grid-rows-6 bg-purple-900">
 	<div class="col-span-2 row-span-2 place-content-center justify-items-center">
 		<Card.Root class="min-w-xl  w-1/2">
 			<Card.Header>
-				<Card.Title>DrinkGPT</Card.Title>
+				<Card.Title>SlatGPT</Card.Title>
 				<Card.Description>Angiv lager forneden, tryk på knappen og lad magien ske</Card.Description>
 			</Card.Header>
 			<Card.Content>
+				<Button
+					onclick={() => {
+						requestPort();
+					}}>Request port</Button
+				>
 				{#if drink}
 					<Card.Title>Alkohol</Card.Title>
 					<ul class="list-disc">
