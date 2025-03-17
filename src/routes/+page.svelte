@@ -9,6 +9,7 @@
 	import { onMount } from 'svelte';
 
 	interface Drink {
+		name: string;
 		alcoholics: string[];
 		others: string[];
 	}
@@ -115,12 +116,15 @@
 		loading = true;
 		drink = undefined;
 		const data = {
-			model: 'qwen2.5:1.5b',
+			model: 'qwen2.5',
 			prompt: buildPrompt(),
 			stream: false,
 			format: {
 				type: 'object',
 				properties: {
+					name: {
+						type: 'string'
+					},
 					alcoholics: {
 						type: 'array'
 					},
@@ -128,7 +132,7 @@
 						type: 'array'
 					}
 				},
-				required: ['alcoholics', 'others']
+				required: ['name', 'alcoholics', 'others']
 			}
 		};
 
@@ -142,44 +146,57 @@
 
 		drink = JSON.parse(json.response);
 
-		if (drink && drink?.alcoholics.length > 2) {
-			drink.alcoholics = drink.alcoholics.slice(0, 2);
+		const alcoholAmount = Math.random() * (3 - 1) + 1;
+		if (drink && drink?.alcoholics.length > alcoholAmount) {
+			drink.alcoholics = drink.alcoholics.slice(0, alcoholAmount);
 		}
-		if (drink && drink?.others.length > 3) {
-			drink.others = drink.others.slice(0, 3);
+		const othersAmount = Math.random() * (4 - 1) + 1;
+		if (drink && drink?.others.length > othersAmount) {
+			drink.others = drink.others.slice(0, othersAmount);
 		}
 		loading = false;
 	}
 
 	function buildPrompt(): string {
 		let prompt: string =
-			'From the two lists I will provide, one with some alcoholics/spirits and one with other types of drinks, You have to say which ones to put in a drink. You can choose a MINIMUM of 1 alcoholic/spirit, and a MAXIMUM of 2. Of the other types of drinks, you can choose a MINIMUM of 1 and a MAXIMUM of 3. It is very important that you follow the minimum and maximum.';
+			'From the two lists I will provide, one with some alcoholics/spirits and one with other types of drinks, You have to say which ones to put in a drink. You can choose a MINIMUM of 1 alcoholic/spirit, and a MAXIMUM of 2. Of the other types of drinks, you can choose a MINIMUM of 1 and a MAXIMUM of 3. It is very important that you follow the minimum and maximum. ';
 		prompt = prompt.concat(
-			`Here is the list of alcoholics/spirits: ${JSON.stringify(alcoholics)}.`
+			`Here is the list of alcoholics/spirits: ${JSON.stringify(shuffleArray(alcoholics))}. `
 		);
 		prompt = prompt.concat(
-			`And here is the list of other types of drinks: ${JSON.stringify(others)}.`
+			`And here is the list of other types of drinks: ${JSON.stringify(shuffleArray(others))}. `
 		);
-		prompt = prompt.concat('Respond using JSON.');
+		prompt = prompt.concat(
+			'Also provide an unhinged brainrot name for the drink, that does not include any ingredients in the name. Respond using JSON.'
+		);
 		return prompt;
+	}
+
+	function shuffleArray(input: string[]): string[] {
+		let array: string[] = input.slice();
+		for (let i = array.length - 1; i >= 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			[array[i], array[j]] = [array[j], array[i]];
+		}
+		return array;
 	}
 </script>
 
 <div class="grid min-h-screen w-screen grid-cols-2 grid-rows-6 bg-purple-400 dark:bg-purple-900">
 	<div class="col-span-2 row-span-2 place-content-center justify-items-center">
-		<Card.Root class="min-w-xl  w-1/2">
-			<Card.Header>
-				<Card.Title>SjatGPT</Card.Title>
-				{#if serialConnected}
-					<Card.Description
-						>Angiv lager forneden, tryk på knappen og lad magien ske</Card.Description
-					>
-				{:else}
-					<Card.Description
-						>Tilslut en arduino og vælg den ved at trykke på knappen herunder.</Card.Description
-					>
-				{/if}
-			</Card.Header>
+		<Card.Root class="min-w-xl mt-6 w-1/2">
+			<!-- <Card.Header> -->
+			<!-- 	<Card.Title>SjatGPT</Card.Title> -->
+			<!-- 	{#if serialConnected} -->
+			<!-- 		<Card.Description -->
+			<!-- 			>Angiv lager forneden, tryk på knappen og lad magien ske</Card.Description -->
+			<!-- 		> -->
+			<!-- 	{:else} -->
+			<!-- 		<Card.Description -->
+			<!-- 			>Tilslut en arduino og vælg den ved at trykke på knappen herunder.</Card.Description -->
+			<!-- 		> -->
+			<!-- 	{/if} -->
+			<!-- </Card.Header> -->
 			<Card.Content>
 				{#if !serialConnected}
 					<Button
@@ -189,7 +206,8 @@
 						}}>Request port</Button
 					>
 				{:else if drink}
-					<Card.Title>Alkohol</Card.Title>
+					<Card.Title>{drink.name}</Card.Title>
+					<Card.Title class="mt-6">Alkohol</Card.Title>
 					<ul class="list-disc">
 						{#each drink.alcoholics as alcohol}
 							<li class="mx-6 mt-2">{alcohol}</li>
@@ -201,8 +219,8 @@
 							<li class="mx-6 mt-2">{other}</li>
 						{/each}
 					</ul>
-				{:else}
-					<p>Tryk på knappen herunder og lad magien ske...</p>
+					<!-- {:else} -->
+					<!-- 	<p>Tryk på knappen herunder og lad magien ske...</p> -->
 				{/if}
 			</Card.Content>
 			{#if serialConnected}
