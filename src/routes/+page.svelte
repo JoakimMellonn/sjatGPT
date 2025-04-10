@@ -116,7 +116,7 @@
 		loading = true;
 		drink = undefined;
 		const data = {
-			model: 'qwen2.5',
+			model: 'gemma3:1b',
 			prompt: buildPrompt(),
 			stream: false,
 			format: {
@@ -210,7 +210,7 @@
 					<Card.Title class="mt-6">Alkohol</Card.Title>
 					<ul class="list-disc">
 						{#each drink.alcoholics as alcohol}
-							<li class="mx-6 mt-2">{alcohol}</li>
+							<li class="mx-6 mt-2 border-collapse">{alcohol}</li>
 						{/each}
 					</ul>
 					<Card.Title class="mt-6">Opblanding</Card.Title>
